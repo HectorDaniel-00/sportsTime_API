@@ -1,0 +1,60 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: ${MONGO_CONTAINER_NAME}
+    restart: always
+    ports:
+      - "${MONGO_PORT}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - sport-time-network
+
+  mongo-express:
+    image: mongo-express
+    container_name: ${MONGO_EXPRESS_CONTAINER_NAME}
+    restart: always
+    ports:
+      - "${MONGO_EXPRESS_PORT}:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: true
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+    depends_on:
+      - mongo
+    networks:
+      - sport-time-network
+  
+  app:
+    build: 
+      context: ./sport-time
+      dockerfile: Dockerfile
+      target: development
+    container_name: ${APP_CONTAINER_NAME}
+    working_dir: /usr/src/app
+    ports:
+      - "${APP_PORT}:3000"
+    volumes:
+      - ./sport-time:/usr/src/app
+      - ./.env:/usr/src/app/.env
+      - /usr/src/app/node_modules
+    env_file:
+      - ./.env
+    depends_on:
+      - mongo
+    networks:
+      - sport-time-network
+
+volumes:
+  mongo_data:
+
+networks:
+  sport-time-network:
+    driver: bridge
+    
+  
+    
